@@ -68,7 +68,7 @@ See OSVVM-Common repository, file Common/src/StreamTransactionPkg.vhd
    * UartRx.vhd
       * UART Receiver verification component. 
 
-For current compile order see UART/UART.pro.
+For current compile order see UART/build.pro.
 
 ### UART/testbench
    * TbUart.vhd
