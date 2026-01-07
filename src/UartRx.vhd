@@ -117,7 +117,8 @@ architecture model of UartRx is
   signal ReceiveFifo : osvvm.ScoreboardPkg_slv.ScoreboardIDType ;
 
   signal ReceiveCount : integer := 0 ;   
-  
+  signal TransactionDone : boolean := FALSE ;  -- Required for calling DoDirectiveTransactions
+
   -- Set initial values for configurable modes
   signal ParityMode  : integer := UARTTB_PARITY_EVEN;
   signal NumStopBits : integer := UARTTB_STOP_BITS_1 ;
@@ -221,26 +222,6 @@ begin
             end if ;
           end if ; 
           
-        when WAIT_FOR_TRANSACTION =>
-          if IsEmpty(ReceiveFifo) then 
-            WaitForToggle(ReceiveCount) ;
-          end if ; 
-
-        when WAIT_FOR_CLOCK =>
-          WaitCycles := TransRec.IntToModel ;
-          -- Log(ModelID, 
-          --   "WaitForClock:  WaitCycles = " & to_string(WaitCycles),
-          --   INFO
-          -- ) ; 
-          wait for (WaitCycles * Baud) - 1 ns ;
-          wait until Uart16XClk = '1' ;
-          
-        when GET_ALERTLOG_ID =>
-          TransRec.IntFromModel <= integer(ModelID) ;
-
-        when GET_TRANSACTION_COUNT =>
-          TransRec.IntFromModel <= ReceiveCount ;
-
         when SET_MODEL_OPTIONS =>
           case TransRec.Options is
             when UartOptionType'pos(SET_PARITY_MODE) => 
@@ -255,18 +236,31 @@ begin
               Alert(ModelID, "SetOptions, Unimplemented Option: " & to_string(UartOptionType'val(TransRec.Options)), FAILURE) ;
           end case ; 
         
-        when MULTIPLE_DRIVER_DETECT =>
-          Alert(ModelID, "Multiple Drivers on Transaction Record." & 
-                         "  Transaction # " & to_string(TransRec.Rdy), FAILURE) ;
+        -- Override default action of DoDirectiveTransactions
+        when WAIT_FOR_TRANSACTION =>
+          if IsEmpty(ReceiveFifo) then 
+            WaitForToggle(ReceiveCount) ;
+          end if ; 
+
+        when WAIT_FOR_CLOCK =>
+          WaitForClock(Uart16XClk, TransRec.IntToModel * Baud, std_logic'val(TransRec.Options)) ;
 
         when others =>
-          Alert(ModelID, "Unimplemented Transaction: " & to_string(Operation), FAILURE) ;
+          --  Do OSVVM stream directive transactions
+          DoDirectiveTransactions (
+            TransRec                 => TransRec             ,
+            Clk                      => Uart16XClk           ,
+            ModelID                  => ModelID              ,
+            TransactionDone          => TransactionDone      , -- implemented above
+            TransactionCount         => ReceiveCount         ,
+            PendingTransactionCount  => GetFifoCount(ReceiveFifo)
+          ) ;
           
       end case ;
     end loop TransactionDispatcherLoop ;
   end process TransactionDispatcher ;
   
-  
+
   ------------------------------------------------------------
   --  Generate 16X Baud Clock
   ------------------------------------------------------------
