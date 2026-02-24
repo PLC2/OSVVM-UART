@@ -2,6 +2,7 @@
 
 | Revision  |  Release Summary | 
 ------------|----------- 
+| 2026.01   |  Added DoDirectiveTransactions to UartTx and UartRx
 | 2025.06   |  Autogenerate OsvvmTestCommonPkg.  Update testbenches for TranscriptOpen and AffirmIfTranscriptsMatch
 |           |  Removed Xilinx 2023.2 specializations as not completely working.  build.pro replaced <DirectoryName>.pro.  
 | 2024.07   |  Updated Tb for CreateClock relocation.  Minor updates to work around tool issues.
@@ -18,6 +19,9 @@
 | 2020.01   |  Updated to Apache Licenses
 | 2019.05   |  Updated for OSVVM public release
 | 1999.01   |  Developed as part of SynthWorks' Advanced VHDL Testbenches and Verification Class
+
+## 2026.01
+- Added DoDirectiveTransactions to UartTx and UartRx.  
 
 ## 2024.07
 - Updated Tb for CreateClock relocation.  
