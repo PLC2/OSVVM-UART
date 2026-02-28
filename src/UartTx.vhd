@@ -94,6 +94,7 @@ architecture model of UartTx is
   
   signal TransmitFifo : osvvm.ScoreboardPkg_slv.ScoreboardIDType ;  
   signal TransmitRequestCount, TransmitDoneCount      : integer := 0 ;   
+  signal TransactionDone : boolean ; 
 
   -- Set initial values for configurable modes
   signal ParityMode  : integer := UARTTB_PARITY_EVEN ;
@@ -170,22 +171,6 @@ begin
             end if ; 
           end if ; 
         
-        when WAIT_FOR_TRANSACTION =>
-          if TransmitRequestCount /= TransmitDoneCount then 
-            wait until TransmitRequestCount = TransmitDoneCount ;
-          end if ; 
-
-        when WAIT_FOR_CLOCK =>
-          WaitCycles := TransRec.IntToModel ;
-          wait for (WaitCycles * Baud) - 1 ns ;
-          wait until UartTxClk = '1' ;
-          
-        when GET_ALERTLOG_ID =>
-          TransRec.IntFromModel <= integer(ModelID) ;
-
-        when GET_TRANSACTION_COUNT =>
-          TransRec.IntFromModel <= TransmitDoneCount ;
-
         when SET_MODEL_OPTIONS =>
           case TransRec.Options is
             when UartOptionType'pos(SET_PARITY_MODE) => 
@@ -200,17 +185,22 @@ begin
               Alert(ModelID, "SetOptions, Unimplemented Option: " & to_string(UartOptionType'val(TransRec.Options)), FAILURE) ;
           end case ; 
 
-        when MULTIPLE_DRIVER_DETECT =>
-          Alert(ModelID, "Multiple Drivers on Transaction Record." & 
-                         "  Transaction # " & to_string(TransRec.Rdy), FAILURE) ;
-
         when others =>
-          Alert(ModelID, "Unimplemented Transaction: " & to_string(Operation), FAILURE) ;
+          --  Do OSVVM stream directive transactions
+          DoDirectiveTransactions (
+            TransRec                 => TransRec             ,
+            Clk                      => UartTxClk            ,
+            ModelID                  => ModelID              ,
+            TransactionDone          => TransactionDone      ,
+            TransactionCount         => TransmitDoneCount    ,
+            PendingTransactionCount  => TransmitRequestCount - TransmitDoneCount
+          ) ;
 
       end case ;
     end loop TransactionDispatcherLoop ;
   end process TransactionDispatcher ;
 
+  TransactionDone <= TransmitRequestCount = TransmitDoneCount ;
 
   ------------------------------------------------------------
   -- Uart Clock
