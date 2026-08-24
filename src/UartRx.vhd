@@ -23,7 +23,7 @@
 --    07/2024   2024.07    The calls to to_01(SafeResize(...) were modified to work around Xcelium issue
 --                         osvvm.ScoreboardPkg_slv.NewID replaced by osvvm.ScoreboardPkg_slv.all due to VCS issue
 --    03/2024   2024.03    Updated SafeResize to use ModelID
---    10/2022   2022.10    Changed enum value PRIVATE to PRIVATE_NAME due to VHDL-2019 keyword conflict.   
+--    10/2022   2022.10    Changed enum value PRIVATE to PRIVATE_NAME due to VHDL-2019 keyword conflict.
 --    05/2022   2022.05    Updated FIFOs so they are Search => PRIVATE
 --                         Added MODEL_ID_NAME generic
 --    03/2022   2022.03    Updated to use singleton based FIFOs.  Updated calls for AlertLogIDs
@@ -31,7 +31,7 @@
 --    08/2021   2021.08    Initialized NumDataBits, ParityMode, and NumStopBits
 --    02/2021   2021.02    Updated for resizing Data and Param to/from TransRec
 --    10/2020   2020.10    Update for updates to stream MIT
---    07/2020   2020.07    Converted transactions to stream MIT 
+--    07/2020   2020.07    Converted transactions to stream MIT
 --    01/2020   2020.01    Updated license notice
 --    05/2019   2019.05    Updated for OSVVM public release
 --    1999      1999.00    Developed for SynthWorks' Advanced VHDL Testbenches and Verification Class
@@ -62,15 +62,15 @@ library ieee ;
   use std.textio.all ;
 
 library OSVVM ;
-  context OSVVM.OsvvmContext ; 
+  context OSVVM.OsvvmContext ;
   use osvvm.ScoreboardPkg_slv.all ;
 --  use osvvm.ScoreboardPkg_slv.NewID ;
 --  use osvvm.ScoreboardPkg_slv.IsEmpty ;
 --  use osvvm.ScoreboardPkg_slv.Push ;
 --  use osvvm.ScoreboardPkg_slv.Pop ;
 
-library osvvm_common ; 
-  context osvvm_common.OsvvmCommonContext ;  
+library osvvm_common ;
+  context osvvm_common.OsvvmCommonContext ;
 
   use work.UartTbPkg.all ;
 
@@ -78,9 +78,9 @@ entity UartRx is
   generic (
     MODEL_ID_NAME           : string := "" ;
     DEFAULT_BAUD            : time    := UART_BAUD_PERIOD_125K ;
-    DEFAULT_NUM_DATA_BITS   : integer := UARTTB_DATA_BITS_8 ; 
-    DEFAULT_PARITY_MODE     : integer := UARTTB_PARITY_EVEN ; 
-    DEFAULT_NUM_STOP_BITS   : integer := UARTTB_STOP_BITS_1  
+    DEFAULT_NUM_DATA_BITS   : integer := UARTTB_DATA_BITS_8 ;
+    DEFAULT_PARITY_MODE     : integer := UARTTB_PARITY_EVEN ;
+    DEFAULT_NUM_STOP_BITS   : integer := UARTTB_STOP_BITS_1
   ) ;
   port (
     TransRec         : InOut UartRecType ;
@@ -89,7 +89,7 @@ entity UartRx is
   -- Use MODEL_ID_NAME Generic if set, otherwise,
   -- use model instance label (preferred if set as entityname_1)
   constant MODEL_INSTANCE_NAME : string :=
-    IfElse(MODEL_ID_NAME'length > 0, MODEL_ID_NAME, 
+    IfElse(MODEL_ID_NAME'length > 0, MODEL_ID_NAME,
       to_lower(PathTail(UartRx'PATH_NAME))) ;
 
 end UartRx ;
@@ -97,7 +97,7 @@ architecture model of UartRx is
 
   -- Clock Generation
   signal Uart16XClk        : std_logic := '0' ;
-  
+
   -- SerialDataIn preprocessing
   signal iSerialDataIn   : std_logic ;
 
@@ -116,7 +116,7 @@ architecture model of UartRx is
 
   signal ReceiveFifo : osvvm.ScoreboardPkg_slv.ScoreboardIDType ;
 
-  signal ReceiveCount : integer := 0 ;   
+  signal ReceiveCount : integer := 0 ;
   signal TransactionDone : boolean := FALSE ;  -- Required for calling DoDirectiveTransactions
 
   -- Set initial values for configurable modes
@@ -134,12 +134,12 @@ begin
     variable ID : AlertLogIDType ;
   begin
     ID            := NewID(MODEL_INSTANCE_NAME) ;
-    ModelID       <= ID ; 
+    ModelID       <= ID ;
     ReceiveFifo   <= NewID("ReceiveFifo", ID, ReportMode => DISABLED, Search => PRIVATE_NAME) ;
     wait ;
   end process InitializeAlerts ;
-  
-  
+
+
   ------------------------------------------------------------
   --  Transaction Dispatcher
   --    Dispatches transactions to
@@ -151,96 +151,96 @@ begin
   begin
     wait for 0 ns ; -- Let ModelID get set
     -- Initialize defaults
-    ParityMode    <= CheckParityMode (ModelID, DEFAULT_PARITY_MODE,   FALSE) ; 
-    NumStopBits   <= CheckNumStopBits(ModelID, DEFAULT_NUM_STOP_BITS, FALSE) ; 
-    NumDataBits   <= CheckNumDataBits(ModelID, DEFAULT_NUM_DATA_BITS, FALSE) ; 
+    ParityMode    <= CheckParityMode (ModelID, DEFAULT_PARITY_MODE,   FALSE) ;
+    NumStopBits   <= CheckNumStopBits(ModelID, DEFAULT_NUM_STOP_BITS, FALSE) ;
+    NumDataBits   <= CheckNumDataBits(ModelID, DEFAULT_NUM_DATA_BITS, FALSE) ;
     Baud          <= CheckBaud(ModelID, DEFAULT_BAUD, FALSE) ;
     -- Initialize BurstFifo even though it is not used, to prevent weird errors
     TransRec.BurstFifo <= NewID("RxBurstFifo", ModelID, ReportMode => DISABLED, Search => PRIVATE_NAME) ;
     wait for 0 ns ;  -- Allow TransRec.BurstFifo to update.
 
-    TransactionDispatcherLoop : loop 
+    TransactionDispatcherLoop : loop
       WaitForTransaction(
          Clk      => Uart16XClk,
          Rdy      => TransRec.Rdy,
          Ack      => TransRec.Ack
       ) ;
-      
+
 --**      Operation := TransRec.Operation ;
-      
+
       case Operation is
         when GET | TRY_GET | CHECK | TRY_CHECK =>
           if IsEmpty(ReceiveFifo) and IsTry(Operation) then
             -- Return if no data
-            TransRec.BoolFromModel <= FALSE ; 
+            TransRec.BoolFromModel <= FALSE ;
           else
             -- Get data
-            TransRec.BoolFromModel <= TRUE ; 
-            if IsEmpty(ReceiveFifo) then 
+            TransRec.BoolFromModel <= TRUE ;
+            if IsEmpty(ReceiveFifo) then
               -- Wait for data
               WaitForToggle(ReceiveCount) ;
-            else 
+            else
               -- Settling for when not Empty at current time, but ReceiveCount not updated yet
               -- ReceiveCount used in reporting below.
-              wait for 0 ns ; 
-            end if ; 
+              wait for 0 ns ;
+            end if ;
             -- Put Data and Parameters into record
             (RxStim.Data, RxStim.Error) := pop(ReceiveFifo) ;
-            TransRec.DataFromModel   <= SafeResize(ModelID, RxStim.Data,  TransRec.DataFromModel'length) ; 
-            TransRec.ParamFromModel  <= SafeResize(ModelID, RxStim.Error, TransRec.ParamFromModel'length); 
-            
+            TransRec.DataFromModel   <= SafeResize(ModelID, RxStim.Data,  TransRec.DataFromModel'length) ;
+            TransRec.ParamFromModel  <= SafeResize(ModelID, RxStim.Error, TransRec.ParamFromModel'length);
+
             if IsCheck(Operation) then
-              -- ExpectedStim := 
-              --   (Data  => SafeResize(ModelID, TransRec.DataToModel, ExpectedStim.Data'length), 
+              -- ExpectedStim :=
+              --   (Data  => SafeResize(ModelID, TransRec.DataToModel, ExpectedStim.Data'length),
               --    Error => to_01(SafeResize(ModelID, TransRec.ParamToModel, ExpectedStim.Error'length))) ;
               -- Work arounds for Cadence
               ExpectedStim.Data  := SafeResize(ModelID, TransRec.DataToModel, ExpectedStim.Data'length) ;
     --          ExpectedStim.Error := to_01(SafeResize(ModelID, TransRec.ParamToModel, TxStim.Error'length)) ;
               ExpectedStim.Error := SafeResize(ModelID, TransRec.ParamToModel, ExpectedStim.Error'length) ;
-              for i in ExpectedStim.Error'range loop 
-                ExpectedStim.Error(i) := to_01(ExpectedStim.Error(i)) ; 
-              end loop ; 
+              for i in ExpectedStim.Error'range loop
+                ExpectedStim.Error(i) := to_01(ExpectedStim.Error(i)) ;
+              end loop ;
 
 
               if Match(RxStim, ExpectedStim) then
                 AffirmPassed(ModelID,
-                  "Received: " & to_string(RxStim) & 
+                  "Received: " & to_string(RxStim) &
                   ".  Operation # " & to_string(ReceiveCount),
                   TransRec.BoolToModel or IsLogEnabled(ModelID, INFO) ) ;
               else
                 AffirmError(ModelID,
-                  "Received: " & to_string(RxStim) & 
-                  ".  Expected: " & to_string(ExpectedStim) & 
+                  "Received: " & to_string(RxStim) &
+                  "." & LF & "Expected: " & to_string(ExpectedStim) &
                   ".  Operation # " & to_string(ReceiveCount) ) ;
-              end if ; 
+              end if ;
             else
-              Log(ModelID, 
-                "Received: " & to_string(RxStim) & 
+              Log(ModelID,
+                "Received: " & to_string(RxStim) &
                 ".  Operation # " & to_string(ReceiveCount),
                 INFO, Enable => TransRec.BoolToModel
-              ) ; 
+              ) ;
             end if ;
-          end if ; 
-          
+          end if ;
+
         when SET_MODEL_OPTIONS =>
           case TransRec.Options is
-            when UartOptionType'pos(SET_PARITY_MODE) => 
-              ParityMode    <= CheckParityMode(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ; 
+            when UartOptionType'pos(SET_PARITY_MODE) =>
+              ParityMode    <= CheckParityMode(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ;
             when UartOptionType'pos(SET_STOP_BITS) =>
-              NumStopBits   <= CheckNumStopBits(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ; 
-            when UartOptionType'pos(SET_DATA_BITS) =>      
-              NumDataBits   <= CheckNumDataBits(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ; 
+              NumStopBits   <= CheckNumStopBits(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ;
+            when UartOptionType'pos(SET_DATA_BITS) =>
+              NumDataBits   <= CheckNumDataBits(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ;
             when UartOptionType'pos(SET_BAUD) =>
-              Baud          <= CheckBaud(ModelID, TransRec.TimeToModel, TransRec.BoolToModel) ;  
-            when others =>     
+              Baud          <= CheckBaud(ModelID, TransRec.TimeToModel, TransRec.BoolToModel) ;
+            when others =>
               Alert(ModelID, "SetOptions, Unimplemented Option: " & to_string(UartOptionType'val(TransRec.Options)), FAILURE) ;
-          end case ; 
-        
+          end case ;
+
         -- Override default action of DoDirectiveTransactions
         when WAIT_FOR_TRANSACTION =>
-          if IsEmpty(ReceiveFifo) then 
+          if IsEmpty(ReceiveFifo) then
             WaitForToggle(ReceiveCount) ;
-          end if ; 
+          end if ;
 
         when WAIT_FOR_CLOCK =>
           WaitForClock(Uart16XClk, TransRec.IntToModel * Baud, std_logic'val(TransRec.Options)) ;
@@ -255,11 +255,11 @@ begin
             TransactionCount         => ReceiveCount         ,
             PendingTransactionCount  => GetFifoCount(ReceiveFifo)
           ) ;
-          
+
       end case ;
     end loop TransactionDispatcherLoop ;
   end process TransactionDispatcher ;
-  
+
 
   ------------------------------------------------------------
   --  Generate 16X Baud Clock
@@ -303,10 +303,10 @@ begin
       when RX_DATA =>
         if SampleBit = '1' and LastDataBit = '1' then
           if ParityMode = UARTTB_PARITY_NONE then
-            RxState <= RX_STOP ; 
-          else 
-            RxState <= RX_PARITY ; 
-          end if ; 
+            RxState <= RX_STOP ;
+          else
+            RxState <= RX_PARITY ;
+          end if ;
         end if ;
 
       when RX_PARITY =>
@@ -363,27 +363,27 @@ begin
         else
           ErrorMode(UARTTB_BREAK_INDEX)  := not (iSerialDataIn or (or RxData)) ;
         end if;
-        if ErrorMode(UARTTB_BREAK_INDEX) = '1' then 
+        if ErrorMode(UARTTB_BREAK_INDEX) = '1' then
           Log(ModelID, "UartRx  Break Detected", INFO) ;
-        end if ; 
-        
+        end if ;
+
         -- Hand off values to Transaction Handler
         push(ReceiveFifo, RxData & ErrorMode) ;
         increment(ReceiveCount) ;
-        
+
         -- Log at interface at DEBUG level
-        Log(ModelID, 
-          "Received:" & 
-          " Data = " & to_hxstring(RxData) & 
-          ", Parity = " & to_string(RxParity) & 
-          ", Stop = " & to_string(iSerialDataIn) & 
-          ", Parity Error = " & to_string(ErrorMode(UARTTB_PARITY_INDEX)) & 
-          ", Stop Error = " & to_string(ErrorMode(UARTTB_STOP_INDEX)) & 
-          ", Break Error = " & to_string(ErrorMode(UARTTB_BREAK_INDEX)) & 
+        Log(ModelID,
+          "Received:" &
+          " Data = " & to_hxstring(RxData) &
+          ", Parity = " & to_string(RxParity) &
+          ", Stop = " & to_string(iSerialDataIn) &
+          ", Parity Error = " & to_string(ErrorMode(UARTTB_PARITY_INDEX)) &
+          ", Stop Error = " & to_string(ErrorMode(UARTTB_STOP_INDEX)) &
+          ", Break Error = " & to_string(ErrorMode(UARTTB_BREAK_INDEX)) &
           ",  Operation # " & to_string(ReceiveCount),
           DEBUG
         ) ;
-        
+
       when others =>
         DataBitCount <= 0 ;
         RxData       := (others => '0') ;   -- %% Tb2 Lab 10.1.5
