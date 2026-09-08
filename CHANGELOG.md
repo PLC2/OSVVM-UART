@@ -1,31 +1,33 @@
 # UART Verification Component Change Log
 
-| Revision  |  Release Summary | 
-------------|----------- 
+| Revision  |  Release Summary |
+------------|-----------
+| 2026.08   |  Added LF to AffirmIf in UartRx - first tests of multiline Alerts.  Updated message in UartTx.
+|           |  Turned off transcript in TbUart_SendGet1.vhd - demonstrates linking in transcript.html
 | 2026.01   |  Added DoDirectiveTransactions to UartTx and UartRx
 | 2025.06   |  Autogenerate OsvvmTestCommonPkg.  Update testbenches for TranscriptOpen and AffirmIfTranscriptsMatch
-|           |  Removed Xilinx 2023.2 specializations as not completely working.  build.pro replaced <DirectoryName>.pro.  
+|           |  Removed Xilinx 2023.2 specializations as not completely working.  build.pro replaced <DirectoryName>.pro.
 | 2024.07   |  Updated Tb for CreateClock relocation.  Minor updates to work around tool issues.
 | 2022.11   |  Updated DEMO testbench for using multiple VC
 | 2022.10   |  Added DEMO testbench for using multiple VC
 |           |  Changed PRIVATE to PRIVATE_NAME
 | 2022.05   |  Updated FIFOs so they are Search => PRIVATE. Added MODEL_ID_NAME generic
-| 2022.03   |  Updated to use singleton based FIFOs.  Updated calls for AlertLogIDs. 
-| 2022.02   |  Replaced to_hstring with to_hxstring in UartRx and UartTbPkg 
-| 2021.09   |  Updated testbenches to create YAML reports 
-| 2021.02   |  Updated resizing of values to/from Stream MIT 
-| 2020.10   |  Updated for updates to Stream MIT 
+| 2022.03   |  Updated to use singleton based FIFOs.  Updated calls for AlertLogIDs.
+| 2022.02   |  Replaced to_hstring with to_hxstring in UartRx and UartTbPkg
+| 2021.09   |  Updated testbenches to create YAML reports
+| 2021.02   |  Updated resizing of values to/from Stream MIT
+| 2020.10   |  Updated for updates to Stream MIT
 | 2020.07   |  Updated to use Stream MIT
 | 2020.01   |  Updated to Apache Licenses
 | 2019.05   |  Updated for OSVVM public release
 | 1999.01   |  Developed as part of SynthWorks' Advanced VHDL Testbenches and Verification Class
 
 ## 2026.01
-- Added DoDirectiveTransactions to UartTx and UartRx.  
+- Added DoDirectiveTransactions to UartTx and UartRx.
 
 ## 2024.07
-- Updated Tb for CreateClock relocation.  
-- Minor updates to UartTx and UartRx for Xcelium. 
+- Updated Tb for CreateClock relocation.
+- Minor updates to UartTx and UartRx for Xcelium.
 - Added deprecated/ScoreboardPkg_Uart for Xcelium.
 - Removed UartRecArrayType - All uses were replaced by StreamRecArrayType.
 - UartRx: replaced individual references of use osvvm.ScoreboardPkg_slv.NewID with use osvvm.ScoreboardPkg_slv.all for VCS
@@ -33,8 +35,8 @@
 ## 2022.11 November 2022
 - Updated UART/testbench_multiple_uarts testbench for using multiple OSVVM VC using for Generate
 - Added usage of new StreamRecArrayType and StreamTransactionArrayPkg
-- Added new examples:  SingleProcess1, SingleProcessLoop_1, SingleProcessLoop_2, and MultipleProcess_1    
-- Added GHDL_Debug directory to support GHDL 
+- Added new examples:  SingleProcess1, SingleProcessLoop_1, SingleProcessLoop_2, and MultipleProcess_1
+- Added GHDL_Debug directory to support GHDL
 
 ## 2022.10 October 2022
 - Added UART/testbench_multiple_uarts testbench for using multiple OSVVM VC using for Generate
@@ -60,10 +62,10 @@ Resulted in port name changes - was going to use alias, but did not work in some
 ## 2020.07 July 2020
 Major release.  Now uses StreamTransactionPkg.
 
- 
+
 ## Copyright and License
-Copyright (C) 1999-2020 by [SynthWorks Design Inc.](http://www.synthworks.com/)   
-Copyright (C) 2020 by [OSVVM contributors](CONTRIBUTOR.md)   
+Copyright (C) 1999-2020 by [SynthWorks Design Inc.](http://www.synthworks.com/)
+Copyright (C) 2020 by [OSVVM contributors](CONTRIBUTOR.md)
 
 This file is part of OSVVM.
 
