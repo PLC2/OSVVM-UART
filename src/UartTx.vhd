@@ -22,14 +22,14 @@
 --    06/2025   2025.06    Added pull request to initialize FIFOS and make them non-reporting - note they are not used
 --    07/2024   2024.07    The calls to to_01(SafeResize(...) were modified to work around Cadence issues
 --    03/2024   2024.03    Updated SafeResize to use ModelID
---    10/2022   2022.10    Changed enum value PRIVATE to PRIVATE_NAME due to VHDL-2019 keyword conflict.   
+--    10/2022   2022.10    Changed enum value PRIVATE to PRIVATE_NAME due to VHDL-2019 keyword conflict.
 --    05/2022   2022.05    Updated FIFOs so they are Search => PRIVATE
 --                         Added MODEL_ID_NAME generic
 --    03/2022   2022.03    Updated to use singleton based FIFOs.  Updated calls for AlertLogIDs
 --    08/2021   2021.08    Initialized NumDataBits, ParityMode, and NumStopBits
 --    02/2021   2021.02    Updated for resizing Data and Param to/from TransRec
 --    10/2020   2020.10    Update for updates to stream MIT
---    07/2020   2020.07    Converted transactions to stream MIT 
+--    07/2020   2020.07    Converted transactions to stream MIT
 --    01/2020   2020.01    Updated license notice
 --    05/2019   2019.05    Updated for OSVVM public release
 --    1999      1999.00    Developed for SynthWorks' Advanced VHDL Testbenches and Verification Class
@@ -57,44 +57,44 @@ library ieee ;
   use ieee.numeric_std.all ;
   use ieee.numeric_std_unsigned.all ;
 
-library OSVVM ; 
-  context OSVVM.OsvvmContext ; 
+library OSVVM ;
+  context OSVVM.OsvvmContext ;
 
-library osvvm_common ; 
-  context osvvm_common.OsvvmCommonContext ;  
+library osvvm_common ;
+  context osvvm_common.OsvvmCommonContext ;
   use osvvm.ScoreboardPkg_slv.all ;
 
   use work.UartTbPkg.all ;
 
-entity UartTx is 
+entity UartTx is
   generic (
     MODEL_ID_NAME           : string := "" ;
     DEFAULT_BAUD            : time    := UART_BAUD_PERIOD_125K ;
-    DEFAULT_NUM_DATA_BITS   : integer := UARTTB_DATA_BITS_8 ; 
-    DEFAULT_PARITY_MODE     : integer := UARTTB_PARITY_EVEN ; 
-    DEFAULT_NUM_STOP_BITS   : integer := UARTTB_STOP_BITS_1  
+    DEFAULT_NUM_DATA_BITS   : integer := UARTTB_DATA_BITS_8 ;
+    DEFAULT_PARITY_MODE     : integer := UARTTB_PARITY_EVEN ;
+    DEFAULT_NUM_STOP_BITS   : integer := UARTTB_STOP_BITS_1
   ) ;
   port (
     TransRec          : InOut UartRecType ;
-    SerialDataOut     : Out   std_logic := '1' 
+    SerialDataOut     : Out   std_logic := '1'
   ) ;
-  
+
   -- Use MODEL_ID_NAME Generic if set, otherwise,
   -- use model instance label (preferred if set as entityname_1)
   constant MODEL_INSTANCE_NAME : string :=
-    IfElse(MODEL_ID_NAME'length > 0, MODEL_ID_NAME, 
+    IfElse(MODEL_ID_NAME'length > 0, MODEL_ID_NAME,
       to_lower(PathTail(UartTx'PATH_NAME))) ;
-      
+
 end UartTx ;
 architecture model of UartTx is
 
   signal UartTxClk : std_logic := '0'  ;
-  
+
   signal ModelID  : AlertLogIDType ;
-  
-  signal TransmitFifo : osvvm.ScoreboardPkg_slv.ScoreboardIDType ;  
-  signal TransmitRequestCount, TransmitDoneCount      : integer := 0 ;   
-  signal TransactionDone : boolean ; 
+
+  signal TransmitFifo : osvvm.ScoreboardPkg_slv.ScoreboardIDType ;
+  signal TransmitRequestCount, TransmitDoneCount      : integer := 0 ;
+  signal TransactionDone : boolean ;
 
   -- Set initial values for configurable modes
   signal ParityMode  : integer := UARTTB_PARITY_EVEN ;
@@ -109,12 +109,12 @@ begin
   --  Initialize alerts
   ------------------------------------------------------------
   Initialize : process
-    variable ID : AlertLogIDType ; 
+    variable ID : AlertLogIDType ;
   begin
-    ID             := NewID(MODEL_INSTANCE_NAME) ; 
-    ModelID        <= ID ; 
-    TransmitFifo   <= NewID("TransmitFifo", ID, ReportMode => DISABLED, Search => PRIVATE_NAME) ; 
-    wait ; 
+    ID             := NewID(MODEL_INSTANCE_NAME) ;
+    ModelID        <= ID ;
+    TransmitFifo   <= NewID("TransmitFifo", ID, ReportMode => DISABLED, Search => PRIVATE_NAME) ;
+    wait ;
   end process Initialize ;
 
 
@@ -129,61 +129,61 @@ begin
   begin
     wait for 0 ns ; -- Let ModelID get set
     -- Initialize
-    ParityMode    <= CheckParityMode (ModelID, DEFAULT_PARITY_MODE,   FALSE) ; 
-    NumStopBits   <= CheckNumStopBits(ModelID, DEFAULT_NUM_STOP_BITS, FALSE) ; 
-    NumDataBits   <= CheckNumDataBits(ModelID, DEFAULT_NUM_DATA_BITS, FALSE) ; 
+    ParityMode    <= CheckParityMode (ModelID, DEFAULT_PARITY_MODE,   FALSE) ;
+    NumStopBits   <= CheckNumStopBits(ModelID, DEFAULT_NUM_STOP_BITS, FALSE) ;
+    NumDataBits   <= CheckNumDataBits(ModelID, DEFAULT_NUM_DATA_BITS, FALSE) ;
     Baud          <= CheckBaud(ModelID, DEFAULT_BAUD, FALSE) ;
     -- Initialize BurstFifo even though it is not used, to prevent weird errors
     TransRec.BurstFifo <= NewID("TxBurstFifo", ModelID, ReportMode => DISABLED, Search => PRIVATE_NAME) ;
     wait for 0 ns ;  -- Allow TransRec.BurstFifo to update.
 
-    TransactionDispatcherLoop : loop 
+    TransactionDispatcherLoop : loop
       WaitForTransaction(
          Clk      => UartTxClk,
          Rdy      => TransRec.Rdy,
          Ack      => TransRec.Ack
       ) ;
-      
+
 --!      Operation := TransRec.Operation ;
-      
+
       case Operation is
         when SEND | SEND_ASYNC =>
           TxStim.Data  := SafeResize(ModelID, TransRec.DataToModel, TxStim.Data'length) ;
 --          TxStim.Error := to_01(SafeResize(ModelID, TransRec.ParamToModel, TxStim.Error'length)) ;
           TxStim.Error := SafeResize(ModelID, TransRec.ParamToModel, TxStim.Error'length) ;
-          for i in TxStim.Error'range loop 
-            TxStim.Error(i) := to_01(TxStim.Error(i)) ; 
-          end loop ; 
---          if TxStim.Error(TxStim.Error'right) = '-' then 
+          for i in TxStim.Error'range loop
+            TxStim.Error(i) := to_01(TxStim.Error(i)) ;
+          end loop ;
+--          if TxStim.Error(TxStim.Error'right) = '-' then
 --            TxStim.Error := (TxStim.Error'range => '0') ;
---          end if ; 
+--          end if ;
           Push(TransmitFifo, TxStim.Data & TxStim.Error) ;
-          Log(ModelID, 
-            "SEND Queueing Transaction: " & to_string(TxStim) & 
+          Log(ModelID,
+            "Sending: " & to_string(TxStim) &
             "  Operation # " & to_string(TransmitRequestCount + 1),
             INFO, Enable => TransRec.BoolToModel
-          ) ; 
+          ) ;
           Increment(TransmitRequestCount) ;
-          wait for 0 ns ; 
+          wait for 0 ns ;
           if Operation = SEND then
-            if TransmitRequestCount /= TransmitDoneCount then 
+            if TransmitRequestCount /= TransmitDoneCount then
               wait until TransmitRequestCount = TransmitDoneCount ;
-            end if ; 
-          end if ; 
-        
+            end if ;
+          end if ;
+
         when SET_MODEL_OPTIONS =>
           case TransRec.Options is
-            when UartOptionType'pos(SET_PARITY_MODE) => 
-              ParityMode    <= CheckParityMode(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ; 
+            when UartOptionType'pos(SET_PARITY_MODE) =>
+              ParityMode    <= CheckParityMode(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ;
             when UartOptionType'pos(SET_STOP_BITS) =>
-              NumStopBits   <= CheckNumStopBits(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ; 
-            when UartOptionType'pos(SET_DATA_BITS) =>      
-              NumDataBits   <= CheckNumDataBits(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ; 
+              NumStopBits   <= CheckNumStopBits(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ;
+            when UartOptionType'pos(SET_DATA_BITS) =>
+              NumDataBits   <= CheckNumDataBits(ModelID, TransRec.IntToModel, TransRec.BoolToModel) ;
             when UartOptionType'pos(SET_BAUD) =>
-              Baud          <= CheckBaud(ModelID, TransRec.TimeToModel, TransRec.BoolToModel) ;  
-            when others =>              
+              Baud          <= CheckBaud(ModelID, TransRec.TimeToModel, TransRec.BoolToModel) ;
+            when others =>
               Alert(ModelID, "SetOptions, Unimplemented Option: " & to_string(UartOptionType'val(TransRec.Options)), FAILURE) ;
-          end case ; 
+          end case ;
 
         when others =>
           --  Do OSVVM stream directive transactions
@@ -204,12 +204,12 @@ begin
 
   ------------------------------------------------------------
   -- Uart Clock
-  --   Period = TransRec.Baud 
+  --   Period = TransRec.Baud
   ------------------------------------------------------------
-  UartTxClk <= not UartTxClk after Baud / 2 ; 
+  UartTxClk <= not UartTxClk after Baud / 2 ;
 
   ------------------------------------------------------------
-  -- Uart Transmit Functionality 
+  -- Uart Transmit Functionality
   --   Wait for Transaction
   --   Serially transmit data from the record
   --   Calculate and transmit parity
@@ -218,78 +218,78 @@ begin
     variable TxStim : UartStimType ;
   begin
     -- Initialize
-    SerialDataOut <= '1' ; 
-    wait for 0 ns ; 
-    
-    TransmitLoop : loop 
+    SerialDataOut <= '1' ;
+    wait for 0 ns ;
+
+    TransmitLoop : loop
       -- Find Transaction
       if IsEmpty(TransmitFifo) then
         WaitForToggle(TransmitRequestCount) ;
-      else 
+      else
         wait for 0 ns ; -- allow TransmitRequestCount to settle if both happen at same time.
       end if ;
-      
+
       (TxStim.Data, TxStim.Error) := Pop(TransmitFifo) ;
-      
-      Log(ModelID, 
-        "SEND Starting: " & to_string(TxStim) & 
+
+      Log(ModelID,
+        "SEND Starting: " & to_string(TxStim) &
         "  Operation # " & to_string(TransmitRequestCount),
         DEBUG
-      ) ; 
-    
-      if TxStim.Error(UARTTB_BREAK_INDEX) = '0' then  
+      ) ;
+
+      if TxStim.Error(UARTTB_BREAK_INDEX) = '0' then
         -- Normal Data Transmission
         -- Drive Start Bit
         SerialDataOut <= '0' ;
         wait until UartTxClk = '1' ;
 
         -- Drive Data Bits
-        for i in 0 to NumDataBits - 1 loop 
-          SerialDataOut <= TxStim.Data(i) ; 
+        for i in 0 to NumDataBits - 1 loop
+          SerialDataOut <= TxStim.Data(i) ;
           wait until UartTxClk = '1' ;
         end loop ;
 
-        -- Drive Parity 
+        -- Drive Parity
         if ParityMode /= UARTTB_PARITY_NONE then
-          -- Drive Parity 
-          if TxStim.Error(UARTTB_PARITY_INDEX) = '0' then  
-            SerialDataOut <= CalcParity(TxStim.Data, ParityMode) ;   
-          else 
-            SerialDataOut <= not CalcParity(TxStim.Data, ParityMode) ; 
-          end if ; 
+          -- Drive Parity
+          if TxStim.Error(UARTTB_PARITY_INDEX) = '0' then
+            SerialDataOut <= CalcParity(TxStim.Data, ParityMode) ;
+          else
+            SerialDataOut <= not CalcParity(TxStim.Data, ParityMode) ;
+          end if ;
           wait until UartTxClk = '1' ;
-        end if ; 
+        end if ;
 
         -- Drive Stop Bit
-        for i in 1 to NumStopBits loop 
-          if TxStim.Error(UARTTB_STOP_INDEX) = '1' then  
+        for i in 1 to NumStopBits loop
+          if TxStim.Error(UARTTB_STOP_INDEX) = '1' then
             SerialDataOut <= '0' ;
             wait until UartTxClk = '1' ;
-          else 
+          else
             SerialDataOut <= '1' ;
             wait until UartTxClk = '1' ;
-          end if ; 
+          end if ;
         end loop ;
         -- if Stop Error, finish at '1'
-        if TxStim.Error(UARTTB_STOP_INDEX) = '1' then  
+        if TxStim.Error(UARTTB_STOP_INDEX) = '1' then
           SerialDataOut <= '1' ;
           wait until UartTxClk = '1' ;
-        end if ; 
-        
-      else  
+        end if ;
+
+      else
 
         -- Break Handling
         SerialDataOut <= '0' ;
-        wait for to_integer(TxStim.Data) * Baud - 1 ns ; 
-        wait until UartTXClk = '1' ; 
+        wait for to_integer(TxStim.Data) * Baud - 1 ns ;
+        wait until UartTXClk = '1' ;
         SerialDataOut <= '1' ;
-        wait until UartTXClk = '1' ; 
+        wait until UartTXClk = '1' ;
 
-      end if ; 
-    
+      end if ;
+
       -- Signal completion
       Increment(TransmitDoneCount) ;
-    end loop TransmitLoop ; 
-  end process UartTransmitHandler ; 
+    end loop TransmitLoop ;
+  end process UartTransmitHandler ;
 
 end model ;
